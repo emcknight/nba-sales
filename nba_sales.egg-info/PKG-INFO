@@ -1,0 +1,15 @@
+Metadata-Version: 2.4
+Name: nba-sales
+Version: 0.1.0
+Requires-Python: <3.11,>=3.9
+Requires-Dist: duckdb<1.1,>=0.9
+Requires-Dist: pandas<2.2,>=1.5
+Requires-Dist: numpy<2.0,>=1.21
+Requires-Dist: scikit-learn<1.4,>=1.0
+Requires-Dist: fastapi<0.111,>=0.95
+Requires-Dist: uvicorn<0.30,>=0.18
+Provides-Extra: dev
+Requires-Dist: pytest<9.0,>=7.0; extra == "dev"
+Requires-Dist: ruff<0.7,>=0.3; extra == "dev"
+Requires-Dist: mypy<1.9,>=1.0; extra == "dev"
+Requires-Dist: pre-commit<4.0,>=2.20; extra == "dev"
