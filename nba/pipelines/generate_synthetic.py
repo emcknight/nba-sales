@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import Dict, Tuple
 
 import numpy as np
 import pandas as pd
@@ -50,20 +49,38 @@ def _make_accounts(rng: np.random.Generator, cfg: SalesSynthConfig) -> pd.DataFr
 
     account_id = np.arange(1, cfg.n_accounts + 1)
     segment = rng.choice(segments, size=cfg.n_accounts, p=[0.62, 0.26, 0.12])
-    industry = rng.choice(industries, size=cfg.n_accounts, p=[0.24, 0.15, 0.14, 0.10, 0.09, 0.13, 0.15])
+    industry = rng.choice(
+        industries, size=cfg.n_accounts, p=[0.24, 0.15, 0.14, 0.10, 0.09, 0.13, 0.15]
+    )
     region = rng.choice(geo, size=cfg.n_accounts, p=[0.55, 0.30, 0.15])
 
     # Firmographics / sizing
     employees = np.where(
         segment == "SMB",
         rng.integers(20, 250, cfg.n_accounts),
-        np.where(segment == "MM", rng.integers(250, 2000, cfg.n_accounts), rng.integers(2000, 25000, cfg.n_accounts)),
+        np.where(
+            segment == "MM",
+            rng.integers(250, 2000, cfg.n_accounts),
+            rng.integers(2000, 25000, cfg.n_accounts),
+        ),
     ).astype(int)
 
     # Potential ACV proxy (higher for ENT, higher for some industries)
-    ind_mult = pd.Series(industry).map(
-        {"SaaS": 1.10, "Ecom": 0.95, "FinTech": 1.05, "Health": 1.00, "EdTech": 0.85, "Manufacturing": 0.98, "Media": 0.90}
-    ).to_numpy()
+    ind_mult = (
+        pd.Series(industry)
+        .map(
+            {
+                "SaaS": 1.10,
+                "Ecom": 0.95,
+                "FinTech": 1.05,
+                "Health": 1.00,
+                "EdTech": 0.85,
+                "Manufacturing": 0.98,
+                "Media": 0.90,
+            }
+        )
+        .to_numpy()
+    )
     seg_mult = pd.Series(segment).map({"SMB": 0.6, "MM": 1.0, "ENT": 1.7}).to_numpy()
 
     base_acv = (employees * rng.uniform(35, 90, cfg.n_accounts) * ind_mult * seg_mult).round(0)
@@ -72,11 +89,25 @@ def _make_accounts(rng: np.random.Generator, cfg: SalesSynthConfig) -> pd.DataFr
 
     # Latent “intent affinity” (how likely they are to show buying intent)
     # Drives inbound signals and responsiveness
-    ind_intent = pd.Series(industry).map(
-        {"SaaS": 0.10, "Ecom": 0.02, "FinTech": 0.05, "Health": 0.00, "EdTech": -0.05, "Manufacturing": -0.02, "Media": -0.03}
-    ).to_numpy()
+    ind_intent = (
+        pd.Series(industry)
+        .map(
+            {
+                "SaaS": 0.10,
+                "Ecom": 0.02,
+                "FinTech": 0.05,
+                "Health": 0.00,
+                "EdTech": -0.05,
+                "Manufacturing": -0.02,
+                "Media": -0.03,
+            }
+        )
+        .to_numpy()
+    )
     seg_intent = pd.Series(segment).map({"SMB": -0.02, "MM": 0.03, "ENT": 0.08}).to_numpy()
-    intent_affinity = np.clip(0.45 + ind_intent + seg_intent + rng.normal(0, 0.12, cfg.n_accounts), 0.05, 0.95)
+    intent_affinity = np.clip(
+        0.45 + ind_intent + seg_intent + rng.normal(0, 0.12, cfg.n_accounts), 0.05, 0.95
+    )
 
     # Created date
     created_days_ago = rng.integers(30, 1800, cfg.n_accounts)
@@ -91,12 +122,14 @@ def _make_accounts(rng: np.random.Generator, cfg: SalesSynthConfig) -> pd.DataFr
             "employees": employees,
             "acv_potential": acv_potential,
             "intent_affinity": intent_affinity.astype(float),
-            "created_date": created_date.dt.date,
+            "created_date": created_date.date,
         }
     )
 
 
-def _make_signals_daily(rng: np.random.Generator, cfg: SalesSynthConfig, accounts: pd.DataFrame) -> pd.DataFrame:
+def _make_signals_daily(
+    rng: np.random.Generator, cfg: SalesSynthConfig, accounts: pd.DataFrame
+) -> pd.DataFrame:
     """
     Daily “signals” that sales might use:
       - web_visits (intent)
@@ -131,14 +164,20 @@ def _make_signals_daily(rng: np.random.Generator, cfg: SalesSynthConfig, account
         web_visits = rng.poisson(lam=lam_visits).astype(int)
 
         # Content downloads: rarer, increases with web visits & affinity
-        lam_dl = np.clip((0.03 + 0.06 * affinity) * (1.0 + 0.12 * web_visits) * week_factor, 0.001, None)
+        lam_dl = np.clip(
+            (0.03 + 0.06 * affinity) * (1.0 + 0.12 * web_visits) * week_factor, 0.001, None
+        )
         content_downloads = rng.poisson(lam=lam_dl).astype(int)
 
         # Trial events: only for accounts with trials; events roughly scale with employees (capped)
         has_trial = rng.uniform(size=len(accounts)) < trial_prop
         trial_active_users = np.where(
             has_trial,
-            rng.poisson(lam=np.clip((0.5 + 2.0 * affinity) * np.sqrt(np.clip(emp, 20, 500) / 50.0), 0.2, 25.0)),
+            rng.poisson(
+                lam=np.clip(
+                    (0.5 + 2.0 * affinity) * np.sqrt(np.clip(emp, 20, 500) / 50.0), 0.2, 25.0
+                )
+            ),
             0,
         ).astype(int)
         trial_events = np.where(
@@ -163,7 +202,12 @@ def _make_signals_daily(rng: np.random.Generator, cfg: SalesSynthConfig, account
     return pd.concat(rows, ignore_index=True)
 
 
-def _make_touches(rng: np.random.Generator, cfg: SalesSynthConfig, accounts: pd.DataFrame, signals_daily: pd.DataFrame) -> pd.DataFrame:
+def _make_touches(
+    rng: np.random.Generator,
+    cfg: SalesSynthConfig,
+    accounts: pd.DataFrame,
+    signals_daily: pd.DataFrame,
+) -> pd.DataFrame:
     """
     Touches are logged activities before as_of_date:
       - emails, calls, linkedin
@@ -175,12 +219,17 @@ def _make_touches(rng: np.random.Generator, cfg: SalesSynthConfig, accounts: pd.
 
     # Use trailing 30d intent to drive touches
     window_30 = (df["ds"] >= as_of - pd.Timedelta(days=30)) & (df["ds"] < as_of)
-    agg = df.loc[window_30].groupby("account_id").agg(
-        web_30=("web_visits", "sum"),
-        dl_30=("content_downloads", "sum"),
-        trial_events_30=("trial_events", "sum"),
-        tau_30=("trial_active_users", "mean"),
-    ).reset_index()
+    agg = (
+        df.loc[window_30]
+        .groupby("account_id")
+        .agg(
+            web_30=("web_visits", "sum"),
+            dl_30=("content_downloads", "sum"),
+            trial_events_30=("trial_events", "sum"),
+            tau_30=("trial_active_users", "mean"),
+        )
+        .reset_index()
+    )
 
     a = accounts.merge(agg, on="account_id", how="left").fillna(0)
 
@@ -204,7 +253,9 @@ def _make_touches(rng: np.random.Generator, cfg: SalesSynthConfig, accounts: pd.
     touch_types = np.array(["EMAIL", "CALL", "LINKEDIN"])
     # Email dominates, calls increase with intent and segment
     rows = []
-    for account_id, nt, is_ent, score in zip(a["account_id"].to_numpy(), n_touches, a["segment"].eq("ENT"), intent_score):
+    for account_id, nt, is_ent, score in zip(
+        a["account_id"].to_numpy(), n_touches, a["segment"].eq("ENT"), intent_score
+    ):
         if nt == 0:
             continue
 
@@ -233,12 +284,16 @@ def _make_touches(rng: np.random.Generator, cfg: SalesSynthConfig, accounts: pd.
             )
         )
 
-    return pd.concat(rows, ignore_index=True) if rows else pd.DataFrame(
-        columns=["account_id", "touch_date", "touch_type", "responded"]
+    return (
+        pd.concat(rows, ignore_index=True)
+        if rows
+        else pd.DataFrame(columns=["account_id", "touch_date", "touch_type", "responded"])
     )
 
 
-def _make_features_as_of(cfg: SalesSynthConfig, signals_daily: pd.DataFrame, touches: pd.DataFrame) -> pd.DataFrame:
+def _make_features_as_of(
+    cfg: SalesSynthConfig, signals_daily: pd.DataFrame, touches: pd.DataFrame
+) -> pd.DataFrame:
     s = signals_daily.copy()
     s["ds"] = pd.to_datetime(s["ds"])
     as_of = pd.to_datetime(cfg.as_of_date)
@@ -246,18 +301,26 @@ def _make_features_as_of(cfg: SalesSynthConfig, signals_daily: pd.DataFrame, tou
     w30 = (s["ds"] >= as_of - pd.Timedelta(days=30)) & (s["ds"] < as_of)
     w90 = (s["ds"] >= as_of - pd.Timedelta(days=90)) & (s["ds"] < as_of)
 
-    g30 = s.loc[w30].groupby("account_id").agg(
-        web_30=("web_visits", "sum"),
-        dl_30=("content_downloads", "sum"),
-        tau_30=("trial_active_users", "mean"),
-        trial_events_30=("trial_events", "sum"),
-        active_days_30=("trial_active_users", lambda x: int((x > 0).sum())),
+    g30 = (
+        s.loc[w30]
+        .groupby("account_id")
+        .agg(
+            web_30=("web_visits", "sum"),
+            dl_30=("content_downloads", "sum"),
+            tau_30=("trial_active_users", "mean"),
+            trial_events_30=("trial_events", "sum"),
+            active_days_30=("trial_active_users", lambda x: int((x > 0).sum())),
+        )
     )
-    g90 = s.loc[w90].groupby("account_id").agg(
-        web_90=("web_visits", "sum"),
-        dl_90=("content_downloads", "sum"),
-        tau_90=("trial_active_users", "mean"),
-        trial_events_90=("trial_events", "sum"),
+    g90 = (
+        s.loc[w90]
+        .groupby("account_id")
+        .agg(
+            web_90=("web_visits", "sum"),
+            dl_90=("content_downloads", "sum"),
+            tau_90=("trial_active_users", "mean"),
+            trial_events_90=("trial_events", "sum"),
+        )
     )
 
     feats = g30.join(g90, how="left").reset_index().fillna(0)
@@ -268,13 +331,17 @@ def _make_features_as_of(cfg: SalesSynthConfig, signals_daily: pd.DataFrame, tou
         t = touches.copy()
         t["touch_date"] = pd.to_datetime(t["touch_date"])
         t30 = t[(t["touch_date"] >= as_of - pd.Timedelta(days=30)) & (t["touch_date"] < as_of)]
-        tg = t30.groupby("account_id").agg(
-            touches_30=("touch_type", "count"),
-            calls_30=("touch_type", lambda x: int((x == "CALL").sum())),
-            emails_30=("touch_type", lambda x: int((x == "EMAIL").sum())),
-            linkedin_30=("touch_type", lambda x: int((x == "LINKEDIN").sum())),
-            responses_30=("responded", "sum"),
-        ).reset_index()
+        tg = (
+            t30.groupby("account_id")
+            .agg(
+                touches_30=("touch_type", "count"),
+                calls_30=("touch_type", lambda x: int((x == "CALL").sum())),
+                emails_30=("touch_type", lambda x: int((x == "EMAIL").sum())),
+                linkedin_30=("touch_type", lambda x: int((x == "LINKEDIN").sum())),
+                responses_30=("responded", "sum"),
+            )
+            .reset_index()
+        )
         feats = feats.merge(tg, on="account_id", how="left").fillna(0)
     else:
         feats["touches_30"] = 0
@@ -333,7 +400,9 @@ def _assign_actions(
     probs[ent_mask, ACTIONS.index("EMAIL_SEQUENCE")] -= 0.05
 
     # High trial activity: demo + workshop
-    high_trial = df["trial_events_30"].to_numpy() >= np.quantile(df["trial_events_30"].to_numpy(), 0.80)
+    high_trial = df["trial_events_30"].to_numpy() >= np.quantile(
+        df["trial_events_30"].to_numpy(), 0.80
+    )
     probs[high_trial, ACTIONS.index("DEMO_OFFER")] += 0.06
     probs[high_trial, ACTIONS.index("TECHNICAL_WORKSHOP")] += 0.04
 
@@ -353,7 +422,9 @@ def _assign_actions(
     action = np.array(ACTIONS, dtype=object)[action_idx]
 
     # Actions occur in the ~2 weeks leading up to as_of_date
-    action_date = pd.to_datetime(cfg.as_of_date) - pd.to_timedelta(rng.integers(0, 14, len(df)), unit="D")
+    action_date = pd.to_datetime(cfg.as_of_date) - pd.to_timedelta(
+        rng.integers(0, 14, len(df)), unit="D"
+    )
 
     out = pd.DataFrame(
         {
@@ -382,7 +453,9 @@ def _simulate_outcomes(
 
     Important: action assignment is biased (propensity), and treatment effects are heterogeneous.
     """
-    df = accounts.merge(feats, on="account_id", how="left").merge(actions, on=["account_id", "as_of_date"], how="left")
+    df = accounts.merge(feats, on="account_id", how="left").merge(
+        actions, on=["account_id", "as_of_date"], how="left"
+    )
 
     seg = df["segment"].to_numpy()
     affinity = df["intent_affinity"].to_numpy()
@@ -423,8 +496,14 @@ def _simulate_outcomes(
     responses = df["responses_30"].to_numpy()
 
     # Demo/workshop work best with high intent + strong trial activity
-    te += np.where((action == "DEMO_OFFER") & (intent >= 0.65) & (trial >= np.quantile(trial, 0.65)), 0.018, 0.0)
-    te += np.where((action == "TECHNICAL_WORKSHOP") & (trial >= np.quantile(trial, 0.75)), 0.020, 0.0)
+    te += np.where(
+        (action == "DEMO_OFFER") & (intent >= 0.65) & (trial >= np.quantile(trial, 0.65)),
+        0.018,
+        0.0,
+    )
+    te += np.where(
+        (action == "TECHNICAL_WORKSHOP") & (trial >= np.quantile(trial, 0.75)), 0.020, 0.0
+    )
 
     # Exec sponsor works mainly for enterprise
     te += np.where((action == "EXEC_SPONSOR_OUTREACH") & (seg == "ENT"), 0.020, 0.0)
@@ -433,7 +512,8 @@ def _simulate_outcomes(
     # Calls work better when there's been some responsiveness
     te += np.where((action == "CALL_OUTREACH") & (responses >= 2), 0.010, 0.0)
 
-    # Pricing concession increases win prob late, but we’ll treat it as reducing realized revenue later
+    # Pricing concession increases win prob late,
+    # but we’ll treat it as reducing realized revenue later
     te += np.where((action == "PRICING_CONCESSION") & (intent >= 0.70), 0.012, 0.0)
     te -= np.where((action == "PRICING_CONCESSION") & (intent < 0.45), 0.010, 0.0)
 
@@ -447,7 +527,9 @@ def _simulate_outcomes(
     won = (rng.uniform(size=len(df)) < p1).astype(int)
 
     # Realized revenue: if pricing concession used, apply discount factor
-    discount_factor = np.where(action == "PRICING_CONCESSION", rng.uniform(0.78, 0.92, size=len(df)), 1.0)
+    discount_factor = np.where(
+        action == "PRICING_CONCESSION", rng.uniform(0.78, 0.92, size=len(df)), 1.0
+    )
     realized_revenue = won.astype(float) * acv * discount_factor
 
     # Expected revenue (use observed p)
@@ -470,7 +552,15 @@ def _simulate_outcomes(
     )
 
 
-def generate(cfg: SalesSynthConfig) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def generate(
+    cfg: SalesSynthConfig,
+) -> tuple[
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+]:
     rng = np.random.default_rng(cfg.seed)
     accounts = _make_accounts(rng, cfg)
     signals = _make_signals_daily(rng, cfg, accounts)
@@ -503,7 +593,7 @@ def load_to_duckdb(
         con.execute("CREATE OR REPLACE TABLE raw_outcomes AS SELECT * FROM df_outcomes")
 
 
-def run(cfg: SalesSynthConfig, db_path=None) -> Dict[str, int]:
+def run(cfg: SalesSynthConfig, db_path=None) -> dict[str, int]:
     accounts, signals, touches, actions, outcomes = generate(cfg)
     load_to_duckdb(accounts, signals, touches, actions, outcomes, db_path=db_path)
     return {
