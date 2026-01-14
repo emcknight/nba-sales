@@ -1,0 +1,98 @@
+# Sales Next Best Action (NBA) Synthetic Dataset — Data Dictionary
+
+## Table: raw_accounts
+| Column | Type | Description |
+|---------|------|-------------|
+| account_id | int | Unique account identifier |
+| segment | str | Account size segment: SMB, MM, ENT |
+| industry | str | Industry category |
+| region | str | Geographic region |
+| employees | int | Estimated employee count |
+| acv_potential | float | Potential annual contract value (ARR potential) |
+| intent_affinity | float | Latent buying intent (0–1) |
+| created_date | date | Date account was created in CRM |
+
+---
+
+## Table: raw_signals_daily
+| Column | Type | Description |
+|---------|------|-------------|
+| account_id | int | Account reference |
+| ds | date | Date of signal |
+| web_visits | int | Daily website visit count |
+| content_downloads | int | Daily content downloads |
+| trial_active_users | int | Active trial users on that day |
+| trial_events | int | In-app or trial usage events |
+
+---
+
+## Table: raw_touches
+| Column | Type | Description |
+|---------|------|-------------|
+| account_id | int | Account reference |
+| touch_date | date | Date of sales outreach |
+| touch_type | str | Channel: EMAIL, CALL, LINKEDIN |
+| responded | int | Whether the contact responded (1=yes, 0=no) |
+
+---
+
+## Table: raw_actions
+| Column | Type | Description |
+|---------|------|-------------|
+| account_id | int | Account reference |
+| as_of_date | date | Reference snapshot date for model training |
+| treated | int | Whether the account received an NBA treatment (1=yes) |
+| propensity_any | float | Model-simulated probability of being treated |
+| action_type | str | Action performed (e.g., DEMO_OFFER, PRICING_CONCESSION, etc.) |
+| action_date | date | Date action was applied |
+| intent_score | float | Calculated intent score used for targeting logic |
+
+---
+
+## Table: raw_outcomes
+| Column | Type | Description |
+|---------|------|-------------|
+| account_id | int | Account reference |
+| as_of_date | date | Reference date |
+| close_date | date | Simulated deal close date |
+| won | int | Whether the deal was won (1=yes) |
+| acv | float | Actualized ACV for the opportunity |
+| p_win_no_action | float | Baseline win probability without treatment |
+| p_win_observed | float | Win probability after observed action |
+| realized_revenue | float | Simulated realized revenue from the opportunity |
+| expected_revenue_observed | float | Expected revenue (p_win_observed × ACV) |
+
+---
+
+## Table: train_sales_nba
+| Column | Type | Description |
+|---------|------|-------------|
+| account_id | int | Account reference |
+| segment | str | Account segment |
+| industry | str | Industry |
+| employees | int | Employee count |
+| acv_potential | float | Potential ARR |
+| web_30 | float | Web visits in trailing 30 days |
+| downloads_30 | float | Content downloads in trailing 30 days |
+| trial_users_30 | float | Average trial active users (30d) |
+| trial_events_30 | float | Total trial events (30d) |
+| touches_30 | int | Sales touches in trailing 30 days |
+| responses_30 | int | Total responses (30d) |
+| action_type | str | Action assigned to account |
+| action_cost | float | Simulated cost of action |
+| won | int | Binary outcome (1=closed won) |
+| realized_revenue | float | Observed realized revenue |
+| y_won | int | Alias of won (target variable) |
+| y_revenue | float | Target revenue metric |
+| as_of_date | date | Reference date |
+
+---
+
+## Table: nba_recommendations
+| Column | Type | Description |
+|---------|------|-------------|
+| account_id | int | Account reference |
+| action | str | Recommended next best action |
+| uplift | float | Predicted incremental win probability |
+| expected_value | float | Expected incremental revenue net of cost |
+| acv | float | Account-level ACV used in calculation |
