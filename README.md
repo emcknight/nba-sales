@@ -217,5 +217,13 @@ streamlit run nba/serving/dashboard_app.py
   <a href="https://www.linkedin.com/in/eric-mcknight1/">LinkedIn</a>
 </p>
 
+---
+
+<p align="center">
+  <sub>
+    This project was developed independently by Eric McKnight with support from generative AI tooling for documentation, code scaffolding, and workflow acceleration.<br>
+    All design decisions, analysis, and modeling work were directed and validated manually.
+  </sub>
+</p>
 
 ---
