@@ -1,7 +1,7 @@
 # Sales Next Best Action (NBA) Decision Intelligence System
 ![Python](https://img.shields.io/badge/python-3.9-blue)
 ![Streamlit](https://img.shields.io/badge/streamlit-%E2%89%A50.85-orange)
-![License](https://img.shields.io/badge/license-MIT-green)
+![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
 ## Overview
 This project demonstrates an end-to-end Decision Intelligence Platform for sales optimization — built from scratch using synthetic data to showcase data science, analytics engineering, machine learning, and MLOps best practices.
