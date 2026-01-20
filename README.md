@@ -112,6 +112,8 @@ streamlit run nba/serving/dashboard_app.py
 ```
 Then visit http://localhost:8501
 
+---
+
 ## Monitoring & Evaluation
 
 Notebook: `notebooks/04_model_monitoring.ipynb`
@@ -129,36 +131,91 @@ Predicted Incremental Revenue: $208,538,803
 Actual Realized Revenue: $208,538,803
 Realization Ratio: 1.00
 ```
+---
 
 ## Repository Structure
-
+```markdown
 nba-sales/
+│
 ├── data/
-│   ├── warehouse.duckdb
-│   └── artifacts/
-│       ├── baseline_win_model.pkl
-│       ├── uplift_predictions.parquet
-│       ├── nba_recommendations.parquet
-│       └── model_performance_summary.csv
+│ ├── warehouse.duckdb
+│ └── artifacts/
+│ ├── baseline_win_model.pkl
+│ ├── uplift_predictions.parquet
+│ ├── nba_recommendations.parquet
+│ └── model_performance_summary.csv
 │
 ├── nba/
-│   ├── config.py
-│   ├── pipelines/
-│   │   └── generate_synthetic_sales.py
-│   ├── features/
-│   │   └── build_training_set.py
-│   ├── modeling/
-│   │   ├── train_baseline.py
-│   │   └── train_uplift.py
-│   ├── decisioning/
-│   │   └── recommend_actions.py
-│   └── serving/
-│       └── dashboard_app.py
+│ ├── config.py
+│ ├── pipelines/
+│ │ └── generate_synthetic_sales.py
+│ ├── features/
+│ │ └── build_training_set.py
+│ ├── modeling/
+│ │ ├── train_baseline.py
+│ │ └── train_uplift.py
+│ ├── decisioning/
+│ │ └── recommend_actions.py
+│ └── serving/
+│ └── dashboard_app.py
 │
 ├── notebooks/
-│   ├── 01_exploration_sales_nba.ipynb
-│   ├── 02_model_baseline_win_prob.ipynb
-│   ├── 03_model_uplift_per_action.ipynb
-│   └── 04_model_monitoring.ipynb
+│ ├── 01_exploration_sales_nba.ipynb
+│ ├── 02_model_baseline_win_prob.ipynb
+│ ├── 03_model_uplift_per_action.ipynb
+│ └── 04_model_monitoring.ipynb
 │
-└── README.md
+└── README.txt
+```
+
+---
+## Setup and Reproduction
+
+```bash
+# Create environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Generate synthetic data
+python scripts/generate_synth.py
+
+# Build training dataset
+python scripts/build_training_set.py
+
+# Run dashboard
+streamlit run nba/serving/dashboard_app.py
+```
+
+---
+
+## Next Steps
+| Area               | Enhancement                                                     |
+| ------------------ | --------------------------------------------------------------- |
+| **Optimization**   | Add a knapsack model to allocate limited sales capacity.        |
+| **Explainability** | Integrate SHAP for per-feature uplift attribution.              |
+| **Temporal Drift** | Simulate quarterly data to visualize evolving performance.      |
+| **Deployment**     | Deploy Streamlit app to Streamlit Cloud or Hugging Face Spaces. |
+
+---
+
+
+## References
+- Lo, V., “The True Lift Model — A Novel Data Mining Approach to Response Modeling in Database Marketing,” SIGKDD, 2002.
+- Radcliffe, N., “Using Uplift Models to Optimize Direct Marketing.”
+- DuckDB Documentation: https://duckdb.org/
+--
+
+---
+
+<p align="center">
+  <b>Eric McKnight</b> • Data Scientist<br>
+  <i>Personal Data Science Portfolio Project</i><br>
+  <a href="https://github.com/emcknight">GitHub</a> • 
+  <a href="https://www.linkedin.com/in/eric-mcknight1/">LinkedIn</a>
+</p>
+
+
+---
