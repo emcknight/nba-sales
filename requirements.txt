@@ -49,8 +49,6 @@ matplotlib-inline==0.2.1
 mypy==1.8.0
 mypy_extensions==1.1.0
 narwhals==2.15.0
--e git+https://github.com/emcknight/nba-sales.git@88c20def53276c046bec13a5f30ed08833213a6e#egg=nba_decision_intelligence
--e git+https://github.com/emcknight/nba-sales.git@88c20def53276c046bec13a5f30ed08833213a6e#egg=nba_sales
 nest-asyncio==1.6.0
 nodeenv==1.10.0
 numpy==1.26.4
