@@ -206,7 +206,6 @@ streamlit run nba/serving/dashboard_app.py
 - Lo, V., “The True Lift Model — A Novel Data Mining Approach to Response Modeling in Database Marketing,” SIGKDD, 2002.
 - Radcliffe, N., “Using Uplift Models to Optimize Direct Marketing.”
 - DuckDB Documentation: https://duckdb.org/
---
 
 ---
 
